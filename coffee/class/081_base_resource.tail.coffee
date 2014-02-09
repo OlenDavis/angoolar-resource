@@ -1,16 +1,15 @@
-root = window
 
-root.BaseResource = class BaseResource extends root.Named
+angoolar.BaseResource = class BaseResource extends angoolar.Named
 	$_prefix: '' # by default, we don't want to prefix our resource names
 	$_makeName: ->
 		@$_checkName()
-		root.camelToDashes super # dasherize the name of the resource
+		angoolar.camelToDashes super # dasherize the name of the resource
 
 	$_idProperty: null # If defined, automatically appends the specified property underscored as the last path segment of the API path made for this resource (e.g. /:id), and adds the given property to $_properties as '=@'
 
 	$_makeApiPath: ->
 		apiPath = "/#{ @$_makeName() }"
-		apiPath += "/:#{ root.camelToUnderscores @$_idProperty }" if @$_idProperty?.length
+		apiPath += "/:#{ angoolar.camelToUnderscores @$_idProperty }" if @$_idProperty?.length
 
 		apiPath
 
@@ -49,9 +48,9 @@ root.BaseResource = class BaseResource extends root.Named
 	# $_propertyToResourceMapping:
 	# 	assets: # our property name
 	# 		assets: # the json property name
-	# 			root.Asset # the BaseResource-extending class used to make an instance for each (if an array) object in the json property
+	# 			angoolar.Asset # the BaseResource-extending class used to make an instance for each (if an array) object in the json property
 	#		weirdAssets:
-	#			root.WeirdAsset
+	#			angoolar.WeirdAsset
 	$_propertyToResourceMapping: {}
 	# As an aside for future development, I would like to see this work with the $_propertyToApiMapping member to actually 
 	# allow the propertyToApiMapping object contain all the property references, but this to determine whether those references
@@ -67,10 +66,10 @@ root.BaseResource = class BaseResource extends root.Named
 		unless @constructor::hasOwnProperty( '$_propertiesConfigured' ) and @constructor::$_propertiesConfigured
 			@constructor::$parse = angular.injector( [ 'ng' ] ).get "$parse"
 
-			@constructor::$_properties                = root.prototypallyExtendPropertyObject @, '$_properties'
-			@constructor::$_propertyToJsonMapping     = root.prototypallyExtendPropertyObject @, '$_propertyToJsonMapping'
-			@constructor::$_propertyToApiMapping      = root.prototypallyExtendPropertyObject @, '$_propertyToApiMapping'
-			@constructor::$_propertyToResourceMapping = root.prototypallyExtendPropertyObject @, '$_propertyToResourceMapping'
+			@constructor::$_properties                = angoolar.prototypallyExtendPropertyObject @, '$_properties'
+			@constructor::$_propertyToJsonMapping     = angoolar.prototypallyExtendPropertyObject @, '$_propertyToJsonMapping'
+			@constructor::$_propertyToApiMapping      = angoolar.prototypallyExtendPropertyObject @, '$_propertyToApiMapping'
+			@constructor::$_propertyToResourceMapping = angoolar.prototypallyExtendPropertyObject @, '$_propertyToResourceMapping'
 			@constructor::$_allProperties             = _.union(
 				_.keys @constructor::$_properties
 				_.keys @constructor::$_propertyToJsonMapping
@@ -82,7 +81,7 @@ root.BaseResource = class BaseResource extends root.Named
 				@constructor::$_properties[ @$_idProperty ] = '=@'
 
 			for property, propertyUsage of @$_properties
-				underscorizedProperty = root.camelToUnderscores property
+				underscorizedProperty = angoolar.camelToUnderscores property
 
 				if angular.isString propertyUsage
 					inJson = -1 isnt propertyUsage.indexOf '='
@@ -157,7 +156,7 @@ root.BaseResource = class BaseResource extends root.Named
 				else
 					jsonExpressionSetter json, jsonAggregateResources[ 0 ] if jsonAggregateResources[ 0 ]?
 
-		root.delete json, 'this' if @$_useThis
+		angoolar.delete json, 'this' if @$_useThis
 
 		json
 
@@ -201,7 +200,7 @@ root.BaseResource = class BaseResource extends root.Named
 			else
 				propertyExpressionSetter @, jsonResources[ 0 ] if jsonResources[ 0 ]?
 
-		root.delete json, 'this' if @$_useThis
+		angoolar.delete json, 'this' if @$_useThis
 
 		@$_init()
 

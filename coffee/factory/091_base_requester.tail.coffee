@@ -1,15 +1,14 @@
-root = window
 
-root.BaseRequester = class BaseRequester extends root.BaseFactory
+angoolar.BaseRequester = class BaseRequester extends angoolar.BaseFactory
 	# $_name: 'BaseRequester' # resource requesters extending this class must declare their own names.
 
 	$_dependencies: [ '$resource', '$q', '$timeout', '$injector' ]
 
 	# If $_apiPath is unspecified, it will be constructed from the name of the given resource class:
-	# $_resourceClass: root.Resource # This must be defined in your inheritance chain as a class that extends Resource, because it'll be used to construct the resources from responses.
+	# $_resourceClass: angoolar.Resource # This must be defined in your inheritance chain as a class that extends Resource, because it'll be used to construct the resources from responses.
 
-	$_apiScheme: root.defaultScheme
-	$_apiDomain: root.apiDomain # ex: 'guru-fam.herokuapp.com'
+	$_apiScheme: angoolar.defaultScheme
+	$_apiDomain: angoolar.apiDomain # ex: 'guru-fam.herokuapp.com'
 	# $_apiPath: '/fixed-asset-manager/get-assets/:partnerId/:assetCategoryName'
 
 	# This is a mirror of the actions hash passed into the $resource service as documented here:
@@ -79,8 +78,8 @@ root.BaseRequester = class BaseRequester extends root.BaseFactory
 
 		@$_apiPath = @$_resourceClass::$_makeApiPath() if @$_resourceClass? and not ( @$_apiPath?.length > 0 )
 
-		@$_actionDefaults = root.prototypallyExtendPropertyObject @, '$_actionDefaults'
-		@$_actions        = root.prototypallyExtendPropertyObject @, '$_actions'
+		@$_actionDefaults = angoolar.prototypallyExtendPropertyObject @, '$_actionDefaults'
+		@$_actions        = angoolar.prototypallyExtendPropertyObject @, '$_actions'
 
 		notAttachedOnlyActions = {}
 		for actionName, actionDefinition of @$_actions
@@ -91,23 +90,23 @@ root.BaseRequester = class BaseRequester extends root.BaseFactory
 			actionDefinition.$_hasArray = actionDefinition.$_hasArray or actionDefinition.isArray or false
 
 			# Setup the url for the action if it has an $_apiPath
-			actionDefinition.url = "#{ @$_apiScheme }#{ root.escapeColons @$_apiDomain }#{ actionDefinition.$_apiPath }" if actionDefinition.$_apiPath?.length
+			actionDefinition.url = "#{ @$_apiScheme }#{ angoolar.escapeColons @$_apiDomain }#{ actionDefinition.$_apiPath }" if actionDefinition.$_apiPath?.length
 
 			# Initialize each action's stats
-			@$_actionStats[ actionName ] = new root.Stats @$injector
+			@$_actionStats[ actionName ] = new angoolar.Stats @$injector
 
 			notAttachedOnlyActions[ actionName ] = actionDefinition unless actionDefinition.$_attachedOnly
 
 		# Initialize our cumulative stats
-		@$_stats = new root.Stats @$injector
+		@$_stats = new angoolar.Stats @$injector
 
 		@resource = @$resource(
-			"#{ @$_apiScheme }#{ root.escapeColons @$_apiDomain }#{ @$_apiPath }"
+			"#{ @$_apiScheme }#{ angoolar.escapeColons @$_apiDomain }#{ @$_apiPath }"
 			null
 			notAttachedOnlyActions
 		)
 
-		_.each notAttachedOnlyActions, ( actionDefinition, actionName ) =>
+		angular.forEach notAttachedOnlyActions, ( actionDefinition, actionName ) =>
 			@constructor::[ actionName ] = ( parameters, postData, theirSuccess, theirError ) =>
 				responseResource = @$_newResponseResource actionDefinition, parameters, postData
 
@@ -135,8 +134,8 @@ root.BaseRequester = class BaseRequester extends root.BaseFactory
 
 	$_initResourceStats: ( resource ) -> # note that resource may be an empty array to be eventually filled with resources that will each have their own stats assigned
 		resource.$_actionStats               = resource.$_actionStats               or {}
-		resource.$_actionStats[ actionName ] = resource.$_actionStats[ actionName ] or new root.Stats @$injector for actionName in _.keys @$_actions
-		resource.$_stats                     = resource.$_stats                     or new root.Stats @$injector
+		resource.$_actionStats[ actionName ] = resource.$_actionStats[ actionName ] or new angoolar.Stats @$injector for actionName in _.keys @$_actions
+		resource.$_stats                     = resource.$_stats                     or new angoolar.Stats @$injector
 
 		resource # for method chaining
 
@@ -145,7 +144,7 @@ root.BaseRequester = class BaseRequester extends root.BaseFactory
 	$_attachRequesterMethods: ( resourceInstance ) ->
 		@$_initResourceStats resourceInstance
 
-		_.each @$_actions, ( actionDefinition, actionName ) =>
+		angular.forEach @$_actions, ( actionDefinition, actionName ) =>
 		# For each of this requester's actions
 
 			actualAction = @$_action
