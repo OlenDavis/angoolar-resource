@@ -1,26 +1,31 @@
 {
-	"name"       : "angoolar-resource",
-	"authors"    : [ "Olen Davis <spelledlikeitsounds@gmail.com>" ],
-	"description": "This avails all the object-orientation of Angoolar to ngResource. This defines some helper base classes that allow you to use ngResource with instances of resource classes, rather than plain objects.",
-	"keywords"   : [
-		"angoolar",
-		"angular",
-		"resource",
-		"ngResource",
-		"base",
-		"class",
-		"classes",
-		"resource",
-		"requester",
-		"coffeescript",
-		"object",
-		"oriented"
-	],
-	"license" : "MIT",
-	"homepage": "http://angoolar.com",
-	"ignore"  : [
-		"**/.*",
-		"node_modules",
-		"bower_components"
-	]
+  "name": "angoolar-resource",
+  "authors": [
+    "Olen Davis <spelledlikeitsounds@gmail.com>"
+  ],
+  "description": "This avails all the object-orientation of Angoolar to ngResource. This defines some helper base classes that allow you to use ngResource with instances of resource classes, rather than plain objects.",
+  "keywords": [
+    "angoolar",
+    "angular",
+    "resource",
+    "ngResource",
+    "base",
+    "class",
+    "classes",
+    "resource",
+    "requester",
+    "coffeescript",
+    "object",
+    "oriented"
+  ],
+  "license": "MIT",
+  "homepage": "http://angoolar.com",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components"
+  ],
+  "dependencies": {
+    "angoolar": "~0.1.0"
+  }
 }
