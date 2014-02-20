@@ -2,8 +2,12 @@
 angoolar.BaseResource = class BaseResource extends angoolar.Named
 	$_prefix: '' # by default, we don't want to prefix our resource names
 	$_makeName: ->
-		@$_checkName()
-		angoolar.camelToDashes super # dasherize the name of the resource
+		try
+			name = angoolar.camelToDashes super # dasherize the name of the resource
+		catch e
+			name = ''
+
+		name
 
 	$_idProperty: null # If defined, automatically appends the specified property underscored as the last path segment of the API path made for this resource (e.g. /:id), and adds the given property to $_properties as '=@'
 
