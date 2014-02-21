@@ -76,7 +76,7 @@ angoolar.BaseRequester = class BaseRequester extends angoolar.BaseFactory
 
 		@$_actionStats = {}
 
-		@$_apiPath = @$_resourceClass::$_makeApiPath() if @$_resourceClass? and not ( @$_apiPath?.length > 0 )
+		@$_apiPath = @$_resourceClass::$_makeApiPath() if @$_resourceClass? and not @$_apiPath?.length
 
 		@$_actionDefaults = angoolar.prototypallyExtendPropertyObject @, '$_actionDefaults'
 		@$_actions        = angoolar.prototypallyExtendPropertyObject @, '$_actions'
@@ -88,6 +88,8 @@ angoolar.BaseRequester = class BaseRequester extends angoolar.BaseFactory
 
 			# Imply $_hasArray from isArray
 			actionDefinition.$_hasArray = actionDefinition.$_hasArray or actionDefinition.isArray or false
+
+			actionDefinition.$_apiPath = actionDefinition.$_resourceClass::$_makeApiPath() if actionDefinition.$_resourceClass? and not actionDefinition.$_apiPath?.length
 
 			# Setup the url for the action if it has an $_apiPath
 			actionDefinition.url = "#{ @$_apiScheme }#{ angoolar.escapeColons @$_apiDomain }#{ actionDefinition.$_apiPath }" if actionDefinition.$_apiPath?.length
@@ -112,12 +114,12 @@ angoolar.BaseRequester = class BaseRequester extends angoolar.BaseFactory
 
 				@$_action responseResource, actionDefinition, actionName, parameters, postData, theirSuccess, theirError
 
-	$_newResponseResource: ( actionDefinition = {}, parameters = {}, postData = null ) ->
+	$_newResponseResource: ( actionDefinition = {}, parameters = {}, postData = null, ignoreHasArray ) ->
 		if actionDefinition.$_rawResponse
 			newResource = @$_initResourceStats if actionDefinition.$_hasArray then new Array() else {}
 		else
-			unless actionDefinition.$_hasArray
-				newResource = new @$_resourceClass()
+			if ignoreHasArray or not actionDefinition.$_hasArray
+				newResource = new ( if actionDefinition.$_resourceClass? then actionDefinition.$_resourceClass else @$_resourceClass )()
 			else
 				newResource = new Array()
 				newResource.$_parameters = parameters
@@ -146,6 +148,10 @@ angoolar.BaseRequester = class BaseRequester extends angoolar.BaseFactory
 
 		angular.forEach @$_actions, ( actionDefinition, actionName ) =>
 		# For each of this requester's actions
+
+			resourceClass = actionDefinition.$_resourceClass or @$_resourceClass
+
+			return unless resourceClass? and resourceInstance instanceof resourceClass
 
 			actualAction = @$_action
 
@@ -229,7 +235,7 @@ angoolar.BaseRequester = class BaseRequester extends angoolar.BaseFactory
 		unless actionDefinition.$_rawResponse
 			if actionDefinition.$_hasArray
 				newResources = new Array()
-				newResources.push @$_makeResponseResource @$_newResponseResource(), responseDatum, parameters for responseDatum in responseData
+				newResources.push @$_makeResponseResource @$_newResponseResource( actionDefinition, parameters, postData, yes ), responseDatum, parameters for responseDatum in responseData
 				@$_mergeIntoResponseResourceArray newResources, responseResource
 			else
 				@$_makeResponseResource responseResource, responseData, parameters
