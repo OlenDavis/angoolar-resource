@@ -13,9 +13,12 @@ angoolar.BaseResource = class BaseResource extends angoolar.Named
 
 	$_makeApiPath: ->
 		apiPath = "/#{ @$_makeName() }"
-		apiPath += "/:#{ angoolar.camelToUnderscores @$_idProperty }" if @$_idProperty?.length
+		apiPath += "/:#{ @$_makeApiProperty @$_idProperty }" if @$_idProperty?.length
 
 		apiPath
+
+	$_makeApiProperty : ( property ) -> angoolar.camelToUnderscores property
+	$_makeJsonProperty: ( property ) -> angoolar.camelToUnderscores property
 
 	# This object's keys correspond to this object's properties/members, and its values correspond to the corresponding
 	# keys in any JSON object being parsed from or to this object.
@@ -85,18 +88,19 @@ angoolar.BaseResource = class BaseResource extends angoolar.Named
 				@constructor::$_properties[ @$_idProperty ] = '=@'
 
 			for property, propertyUsage of @$_properties
-				underscorizedProperty = angoolar.camelToUnderscores property
+				jsonProperty = @$_makeJsonProperty property
+				apiProperty  = @$_makeApiProperty property
 
 				if angular.isString propertyUsage
 					inJson = -1 isnt propertyUsage.indexOf '='
 					inApi  = -1 isnt propertyUsage.indexOf '@'
 
-					@constructor::$_propertyToJsonMapping[ property ] = underscorizedProperty if inJson
-					@constructor::$_propertyToApiMapping[  property ] = underscorizedProperty if inApi
+					@constructor::$_propertyToJsonMapping[ property ] = jsonProperty if inJson
+					@constructor::$_propertyToApiMapping[  property ] = apiProperty  if inApi
 
 				else if angular.isFunction propertyUsage
 					resourceMapping = {}
-					resourceMapping[ underscorizedProperty ] = propertyUsage
+					resourceMapping[ jsonProperty ] = propertyUsage
 
 					@constructor::$_propertyToResourceMapping[ property ] = resourceMapping
 
