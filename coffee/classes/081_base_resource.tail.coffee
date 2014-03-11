@@ -162,7 +162,7 @@ angoolar.BaseResource = class BaseResource extends angoolar.Named
 				if isPropertyArray or jsonAggregateResources.length > 1
 					jsonExpressionSetter json, jsonAggregateResources
 				else
-					jsonExpressionSetter json, jsonAggregateResources[ 0 ] if jsonAggregateResources[ 0 ]?
+					jsonExpressionSetter json, jsonAggregateResources[ 0 ]
 
 		angoolar.delete json, 'this' if @$_useThis
 
@@ -207,7 +207,7 @@ angoolar.BaseResource = class BaseResource extends angoolar.Named
 			if isPropertyArray or jsonResources.length > 1
 				propertyExpressionSetter @, jsonResources
 			else
-				propertyExpressionSetter @, jsonResources[ 0 ] if jsonResources[ 0 ]?
+				propertyExpressionSetter @, jsonResources[ 0 ]
 
 		angoolar.delete json, 'this' if @$_useThis
 
