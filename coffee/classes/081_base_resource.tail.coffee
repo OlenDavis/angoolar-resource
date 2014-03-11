@@ -199,9 +199,10 @@ angoolar.BaseResource = class BaseResource extends angoolar.Named
 
 				if angular.isArray jsonResourceObjectOrArray
 					isPropertyArray = isPropertyArray or yes
-					jsonResources.push new resourceClass().$_fromJson( jsonResourceDatum ) for jsonResourceDatum in jsonResourceObjectOrArray
+					for jsonResourceDatum in jsonResourceObjectOrArray
+						jsonResources.push if jsonResourceDatum? then new resourceClass().$_fromJson( jsonResourceDatum ) else jsonResourceDatum
 				else
-					jsonResources.push new resourceClass().$_fromJson( jsonResourceObjectOrArray )
+					jsonResources.push if jsonResourceObjectOrArray? then new resourceClass().$_fromJson( jsonResourceObjectOrArray ) else jsonResourceObjectOrArray
 
 			if isPropertyArray or jsonResources.length > 1
 				propertyExpressionSetter @, jsonResources
