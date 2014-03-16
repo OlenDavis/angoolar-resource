@@ -162,52 +162,54 @@ angoolar.BaseResource = class BaseResource extends angoolar.Named
 				if isPropertyArray or jsonAggregateResources.length > 1
 					jsonExpressionSetter json, jsonAggregateResources
 				else
-					jsonExpressionSetter json, jsonAggregateResources[ 0 ] if jsonAggregateResources[ 0 ]?
+					jsonExpressionSetter json, jsonAggregateResources[ 0 ]
 
 		angoolar.delete json, 'this' if @$_useThis
 
 		json
 
 	$_fromJson: ( json ) ->
-		if json?
-			json.this = json if @$_useThis # this is to allow expressions to use `this` to refer to the json object itself
+		json = json or {} # ensures if json is null that any errors that may/should arise from that situation occur
 
-			# Actually assign all the JSON properties properly to the resource if possible
-			angular.forEach @$_propertyToJsonMapping, ( jsonExpression, propertyExpression ) =>
+		json.this = json if @$_useThis # this is to allow expressions to use `this` to refer to the json object itself
+
+		# Actually assign all the JSON properties properly to the resource if possible
+		angular.forEach @$_propertyToJsonMapping, ( jsonExpression, propertyExpression ) =>
+			jsonExpressionGetter = @$parse jsonExpression
+			jsonValue = jsonExpressionGetter json
+
+			propertyExpressionGetter = @$parse propertyExpression
+			propertyExpressionSetter = propertyExpressionGetter.assign
+			propertyExpressionSetter @, jsonValue
+
+		# Assign all the aggregated resources
+		angular.forEach @$_propertyToResourceMapping, ( aggregateResourceDefinition, propertyExpression ) =>
+			# We will first assume we're not going to be attributing these aggregated resources to the given propertyExpression evaluation as an array unless (1), any
+			# of the aggregated resources (given by its corresponding jsonExpression) is an array, or (2), we have multiple aggregated resources
+			# that each correspond to this same propertyExpression evaluation.
+			isPropertyArray = no
+			jsonResources = new Array()
+
+			propertyExpressionGetter = @$parse propertyExpression
+			propertyExpressionSetter = propertyExpressionGetter.assign
+
+			angular.forEach aggregateResourceDefinition, ( resourceClass, jsonExpression ) =>
 				jsonExpressionGetter = @$parse jsonExpression
-				jsonValue = jsonExpressionGetter json
+				jsonResourceObjectOrArray = jsonExpressionGetter json
 
-				propertyExpressionGetter = @$parse propertyExpression
-				propertyExpressionSetter = propertyExpressionGetter.assign
-				propertyExpressionSetter @, jsonValue
-
-			# Assign all the aggregated resources
-			angular.forEach @$_propertyToResourceMapping, ( aggregateResourceDefinition, propertyExpression ) =>
-				# We will first assume we're not going to be attributing these aggregated resources to the given propertyExpression evaluation as an array unless (1), any
-				# of the aggregated resources (given by its corresponding jsonExpression) is an array, or (2), we have multiple aggregated resources
-				# that each correspond to this same propertyExpression evaluation.
-				isPropertyArray = no
-				jsonResources = new Array()
-
-				propertyExpressionGetter = @$parse propertyExpression
-				propertyExpressionSetter = propertyExpressionGetter.assign
-
-				angular.forEach aggregateResourceDefinition, ( resourceClass, jsonExpression ) =>
-					jsonExpressionGetter = @$parse jsonExpression
-					jsonResourceObjectOrArray = jsonExpressionGetter json
-
-					if angular.isArray jsonResourceObjectOrArray
-						isPropertyArray = isPropertyArray or yes
-						jsonResources.push new resourceClass().$_fromJson( jsonResourceDatum ) for jsonResourceDatum in jsonResourceObjectOrArray
-					else
-						jsonResources.push new resourceClass().$_fromJson( jsonResourceObjectOrArray )
-
-				if isPropertyArray or jsonResources.length > 1
-					propertyExpressionSetter @, jsonResources
+				if angular.isArray jsonResourceObjectOrArray
+					isPropertyArray = isPropertyArray or yes
+					for jsonResourceDatum in jsonResourceObjectOrArray
+						jsonResources.push if jsonResourceDatum? then new resourceClass().$_fromJson( jsonResourceDatum ) else jsonResourceDatum
 				else
-					propertyExpressionSetter @, jsonResources[ 0 ] if jsonResources[ 0 ]?
+					jsonResources.push if jsonResourceObjectOrArray? then new resourceClass().$_fromJson( jsonResourceObjectOrArray ) else jsonResourceObjectOrArray
 
-			angoolar.delete json, 'this' if @$_useThis
+			if isPropertyArray or jsonResources.length > 1
+				propertyExpressionSetter @, jsonResources
+			else
+				propertyExpressionSetter @, jsonResources[ 0 ]
+
+		angoolar.delete json, 'this' if @$_useThis
 
 		@$_init()
 
