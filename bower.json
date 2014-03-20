@@ -26,6 +26,6 @@
     "bower_components"
   ],
   "dependencies": {
-    "angoolar": "~0.3.1"
+    "angoolar": "~0.4.1"
   }
 }
