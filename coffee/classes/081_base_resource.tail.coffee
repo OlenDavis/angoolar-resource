@@ -17,8 +17,10 @@ angoolar.BaseResource = class BaseResource extends angoolar.Named
 
 		apiPath
 
-	$_makeApiProperty : ( property ) -> angoolar.camelToUnderscores property
-	$_makeJsonProperty: ( property ) -> angoolar.camelToUnderscores property
+	$_underscoreProperties: no
+
+	$_makeApiProperty : ( property ) -> if @$_underscoreProperties then angoolar.camelToUnderscores property else property
+	$_makeJsonProperty: ( property ) -> if @$_underscoreProperties then angoolar.camelToUnderscores property else property
 
 	# This object's keys correspond to this object's properties/members, and its values correspond to the corresponding
 	# keys in any JSON object being parsed from or to this object.
