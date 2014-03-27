@@ -116,8 +116,11 @@ angoolar.BaseResource = class BaseResource extends angoolar.Named
 						inApi  = -1 isnt propertyUsage.indexOf '@'
 
 						if angular.isFunction angoolar[ resourceClassName ]
-							@constructor::$_propertyToResourceJsonMapping[ property ] = angoolar[ resourceClassName ] if inJson
-							@constructor::$_propertyToResourceApiMapping[  property ] = angoolar[ resourceClassName ] if inApi
+							( resourceJsonMapping = {} )[ jsonProperty ] = angoolar[ resourceClassName ]
+							( resourceApiMapping  = {} )[ apiProperty  ] = angoolar[ resourceClassName ]
+
+							@constructor::$_propertyToResourceJsonMapping[ property ] = resourceJsonMapping if inJson
+							@constructor::$_propertyToResourceApiMapping[  property ] = resourceApiMapping  if inApi
 
 				else if angular.isFunction propertyUsage
 					resourceMapping = {}
