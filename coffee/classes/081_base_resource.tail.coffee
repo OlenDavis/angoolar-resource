@@ -141,6 +141,12 @@ angoolar.BaseResource = class BaseResource extends angoolar.Named
 	# This method is used to initialize the resource after it's been created - i.e. including the constructor and JSON deserialization
 	$_init: ->
 
+	# If there's a resource requester extending BaseRequester that declares this class as its $_resourceClass, then for each of the non-GET
+	# actions it declares, there can be two corresponding methods on each instance of this class returned by its various actions according to the
+	# following rule:
+	# For successful post-processing of the action: $actionSuccess( resourceResponse, headersGetter ) ->
+	# For erroneous post-processing of the action: $actionError( resourceResponse, headersGetter ) ->
+
 	$_toJson: ->
 		json = {}
 
@@ -152,8 +158,36 @@ angoolar.BaseResource = class BaseResource extends angoolar.Named
 			jsonExpressionSetter = @$parse( jsonExpression ).assign
 			jsonExpressionSetter json, propertyExpressionGetter @
 
+		@$_putResourcesOnto json, @$_propertyToResourceJsonMapping
+
+		angoolar.delete json, 'this' if @$_useThis
+
+		json
+
+	$_fromJson: ( json ) ->
+		if json?
+			json.this = json if @$_useThis # this is to allow expressions to use `this` to refer to the json object itself
+
+			# Actually assign all the JSON properties properly to the resource if possible
+			angular.forEach @$_propertyToJsonMapping, ( jsonExpression, propertyExpression ) =>
+				jsonExpressionGetter = @$parse jsonExpression
+				jsonValue = jsonExpressionGetter json
+
+				propertyExpressionGetter = @$parse propertyExpression
+				propertyExpressionSetter = propertyExpressionGetter.assign
+				propertyExpressionSetter @, jsonValue
+
+			@$_getResourcesFrom json, @$_propertyToResourceJsonMapping
+
+			angoolar.delete json, 'this' if @$_useThis
+
+		@$_init()
+
+		@ # for method chaining
+
+	$_putResourcesOnto: ( target, resourceMapping ) ->
 		# Assign all the aggregated resources
-		angular.forEach @$_propertyToResourceJsonMapping, ( aggregateResourceDefinition, propertyExpression ) =>
+		angular.forEach resourceMapping, ( aggregateResourceDefinition, propertyExpression ) =>
 			propertyExpressionGetter = @$parse propertyExpression
 
 			angular.forEach aggregateResourceDefinition, ( resourceClass, jsonExpression ) =>
@@ -184,65 +218,37 @@ angoolar.BaseResource = class BaseResource extends angoolar.Named
 						jsonAggregateResources.push aggregatedResource.$_toJson() if aggregatedResource instanceof resourceClass
 
 				if isPropertyArray or jsonAggregateResources.length > 1
-					jsonExpressionSetter json, jsonAggregateResources
+					jsonExpressionSetter target, jsonAggregateResources
 				else
-					jsonExpressionSetter json, jsonAggregateResources[ 0 ]
+					jsonExpressionSetter target, jsonAggregateResources[ 0 ]
 
-		angoolar.delete json, 'this' if @$_useThis
+	$_getResourcesFrom: ( target, resourceMapping ) ->
+		# Assign all the aggregated resources
+		angular.forEach resourceMapping, ( aggregateResourceDefinition, propertyExpression ) =>
+			# We will first assume we're not going to be attributing these aggregated resources to the given propertyExpression evaluation as an array unless (1), any
+			# of the aggregated resources (given by its corresponding jsonExpression) is an array, or (2), we have multiple aggregated resources
+			# that each correspond to this same propertyExpression evaluation.
+			isPropertyArray = no
+			jsonResources = new Array()
 
-		json
+			propertyExpressionGetter = @$parse propertyExpression
+			propertyExpressionSetter = propertyExpressionGetter.assign
 
-	$_fromJson: ( json ) ->
-		if json?
-			json.this = json if @$_useThis # this is to allow expressions to use `this` to refer to the json object itself
-
-			# Actually assign all the JSON properties properly to the resource if possible
-			angular.forEach @$_propertyToJsonMapping, ( jsonExpression, propertyExpression ) =>
+			angular.forEach aggregateResourceDefinition, ( resourceClass, jsonExpression ) =>
 				jsonExpressionGetter = @$parse jsonExpression
-				jsonValue = jsonExpressionGetter json
+				jsonResourceObjectOrArray = jsonExpressionGetter target
 
-				propertyExpressionGetter = @$parse propertyExpression
-				propertyExpressionSetter = propertyExpressionGetter.assign
-				propertyExpressionSetter @, jsonValue
-
-			# Assign all the aggregated resources
-			angular.forEach @$_propertyToResourceJsonMapping, ( aggregateResourceDefinition, propertyExpression ) =>
-				# We will first assume we're not going to be attributing these aggregated resources to the given propertyExpression evaluation as an array unless (1), any
-				# of the aggregated resources (given by its corresponding jsonExpression) is an array, or (2), we have multiple aggregated resources
-				# that each correspond to this same propertyExpression evaluation.
-				isPropertyArray = no
-				jsonResources = new Array()
-
-				propertyExpressionGetter = @$parse propertyExpression
-				propertyExpressionSetter = propertyExpressionGetter.assign
-
-				angular.forEach aggregateResourceDefinition, ( resourceClass, jsonExpression ) =>
-					jsonExpressionGetter = @$parse jsonExpression
-					jsonResourceObjectOrArray = jsonExpressionGetter json
-
-					if angular.isArray jsonResourceObjectOrArray
-						isPropertyArray = isPropertyArray or yes
-						for jsonResourceDatum in jsonResourceObjectOrArray
-							jsonResources.push if jsonResourceDatum? then new resourceClass().$_fromJson( jsonResourceDatum ) else jsonResourceDatum
-					else
-						jsonResources.push if jsonResourceObjectOrArray? then new resourceClass().$_fromJson( jsonResourceObjectOrArray ) else jsonResourceObjectOrArray
-
-				if isPropertyArray or jsonResources.length > 1
-					propertyExpressionSetter @, jsonResources
+				if angular.isArray jsonResourceObjectOrArray
+					isPropertyArray = isPropertyArray or yes
+					for jsonResourceDatum in jsonResourceObjectOrArray
+						jsonResources.push if jsonResourceDatum? then new resourceClass().$_fromJson( jsonResourceDatum ) else jsonResourceDatum
 				else
-					propertyExpressionSetter @, jsonResources[ 0 ]
+					jsonResources.push if jsonResourceObjectOrArray? then new resourceClass().$_fromJson( jsonResourceObjectOrArray ) else jsonResourceObjectOrArray
 
-			angoolar.delete json, 'this' if @$_useThis
-
-		@$_init()
-
-		@ # for method chaining
-
-	# If there's a resource requester extending BaseRequester that declares this class as its $_resourceClass, then for each of the non-GET
-	# actions it declares, there can be two corresponding methods on each instance of this class returned by its various actions according to the
-	# following rule:
-	# For successful post-processing of the action: $actionSuccess( resourceResponse, headersGetter ) ->
-	# For erroneous post-processing of the action: $actionError( resourceResponse, headersGetter ) ->
+			if isPropertyArray or jsonResources.length > 1
+				propertyExpressionSetter @, jsonResources
+			else
+				propertyExpressionSetter @, jsonResources[ 0 ]
 
 	$_getApiParameters: ->
 		parameters = {}
@@ -250,10 +256,14 @@ angoolar.BaseResource = class BaseResource extends angoolar.Named
 		for property, apiParameter of @$_propertyToApiMapping
 			parameters[ apiParameter ] = @[ property ] if @[ property ]?
 
+		@$_putResourcesOnto parameters, @$_propertyToResourceApiMapping
+
 		parameters
 
 	$_setApiParameters: ( parameters ) ->
 		for property, apiParameter of @$_propertyToApiMapping
 			@[ property ] = parameters[ apiParameter ] if parameters?[ apiParameter ]?
+
+		@$_getResourcesFrom parameters, @$_propertyToResourceApiMapping
 
 		@ # for method chaining
