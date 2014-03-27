@@ -45,22 +45,25 @@ angoolar.BaseResource = class BaseResource extends angoolar.Named
 	#	*	'=@'                          - both = and @
 	#	*	function extends BaseResource - the property will be serialized into and deserialized from JSON as an instance of the
 	#		                                given resource
+	#	*	'=@BaseResourceOnAngoolar'    - a function extending BaseResource with that name will be found on angoolar and used
+	#                                       to serialize the corresponding JSON and/or API property.
 	$_properties: {}
 
 	# This allows us to have properties of the resource be instances of other resources. The following is an example using
-	# all possible parameters on each resource property. The key of each property of $_propertyToResourceMapping is the property
+	# all possible parameters on each resource property. The key of each property of $_propertyToResourceJsonMapping is the property
 	# of this resource that will be populated with an instance or an array of instances of the resource class given by each
 	# each corresponding resourceClass, which must be a class extending BaseResource.
 	#
 	# (If the jsonExpression refers to a property that's an array, it will loop through each object in the array and add an
 	# instance of the given resourceClass for each.)
-	# $_propertyToResourceMapping:
+	# $_propertyToResourceJsonMapping:
 	# 	assets: # our property name
 	# 		assets: # the json property name
 	# 			angoolar.Asset # the BaseResource-extending class used to make an instance for each (if an array) object in the json property
 	#		weirdAssets:
 	#			angoolar.WeirdAsset
-	$_propertyToResourceMapping: {}
+	$_propertyToResourceJsonMapping: {}
+	$_propertyToResourceApiMapping : {}
 	# As an aside for future development, I would like to see this work with the $_propertyToApiMapping member to actually 
 	# allow the propertyToApiMapping object contain all the property references, but this to determine whether those references
 	# are simple (or just what their JSON representations are) or class instances, given by this member. And maybe that would
@@ -75,15 +78,17 @@ angoolar.BaseResource = class BaseResource extends angoolar.Named
 		unless @constructor::hasOwnProperty( '$_propertiesConfigured' ) and @constructor::$_propertiesConfigured
 			@constructor::$parse = angular.injector( [ 'ng' ] ).get "$parse"
 
-			@constructor::$_properties                = angoolar.prototypallyExtendPropertyObject @, '$_properties'
-			@constructor::$_propertyToJsonMapping     = angoolar.prototypallyExtendPropertyObject @, '$_propertyToJsonMapping'
-			@constructor::$_propertyToApiMapping      = angoolar.prototypallyExtendPropertyObject @, '$_propertyToApiMapping'
-			@constructor::$_propertyToResourceMapping = angoolar.prototypallyExtendPropertyObject @, '$_propertyToResourceMapping'
-			@constructor::$_allProperties             = _.union(
+			@constructor::$_properties                    = angoolar.prototypallyExtendPropertyObject @, '$_properties'
+			@constructor::$_propertyToJsonMapping         = angoolar.prototypallyExtendPropertyObject @, '$_propertyToJsonMapping'
+			@constructor::$_propertyToApiMapping          = angoolar.prototypallyExtendPropertyObject @, '$_propertyToApiMapping'
+			@constructor::$_propertyToResourceJsonMapping = angoolar.prototypallyExtendPropertyObject @, '$_propertyToResourceJsonMapping'
+			@constructor::$_propertyToResourceApiMapping  = angoolar.prototypallyExtendPropertyObject @, '$_propertyToResourceApiMapping'
+			@constructor::$_allProperties                 = _.union(
 				_.keys @constructor::$_properties
 				_.keys @constructor::$_propertyToJsonMapping
 				_.keys @constructor::$_propertyToApiMapping
-				_.keys @constructor::$_propertyToResourceMapping
+				_.keys @constructor::$_propertyToResourceJsonMapping
+				_.keys @constructor::$_propertyToResourceApiMapping
 			)
 
 			if @$_idProperty?.length and not @$_properties[ @$_idProperty ]?
@@ -94,17 +99,31 @@ angoolar.BaseResource = class BaseResource extends angoolar.Named
 				apiProperty  = @$_makeApiProperty property
 
 				if angular.isString propertyUsage
-					inJson = -1 isnt propertyUsage.indexOf '='
-					inApi  = -1 isnt propertyUsage.indexOf '@'
+					if /[@=]{1,2}/.test propertyUsage
+						inJson = -1 isnt propertyUsage.indexOf '='
+						inApi  = -1 isnt propertyUsage.indexOf '@'
 
-					@constructor::$_propertyToJsonMapping[ property ] = jsonProperty if inJson
-					@constructor::$_propertyToApiMapping[  property ] = apiProperty  if inApi
+						@constructor::$_propertyToJsonMapping[ property ] = jsonProperty if inJson
+						@constructor::$_propertyToApiMapping[  property ] = apiProperty  if inApi
+					else
+						usageMatches = propertyUsage.match /([@=]{0,2})([^@=]+)/
+						usage             = usageMatches[ 1 ]
+						resourceClassName = usageMatches[ 2 ]
+
+						usage = '=' unless usage?.length
+
+						inJson = -1 isnt propertyUsage.indexOf '='
+						inApi  = -1 isnt propertyUsage.indexOf '@'
+
+						if angular.isFunction angoolar[ resourceClassName ]
+							@constructor::$_propertyToResourceJsonMapping[ property ] = angoolar[ resourceClassName ] if inJson
+							@constructor::$_propertyToResourceApiMapping[  property ] = angoolar[ resourceClassName ] if inApi
 
 				else if angular.isFunction propertyUsage
 					resourceMapping = {}
 					resourceMapping[ jsonProperty ] = propertyUsage
 
-					@constructor::$_propertyToResourceMapping[ property ] = resourceMapping
+					@constructor::$_propertyToResourceJsonMapping[ property ] = resourceMapping
 
 			@constructor::$_propertiesConfigured = yes
 
@@ -131,7 +150,7 @@ angoolar.BaseResource = class BaseResource extends angoolar.Named
 			jsonExpressionSetter json, propertyExpressionGetter @
 
 		# Assign all the aggregated resources
-		angular.forEach @$_propertyToResourceMapping, ( aggregateResourceDefinition, propertyExpression ) =>
+		angular.forEach @$_propertyToResourceJsonMapping, ( aggregateResourceDefinition, propertyExpression ) =>
 			propertyExpressionGetter = @$parse propertyExpression
 
 			angular.forEach aggregateResourceDefinition, ( resourceClass, jsonExpression ) =>
@@ -184,7 +203,7 @@ angoolar.BaseResource = class BaseResource extends angoolar.Named
 				propertyExpressionSetter @, jsonValue
 
 			# Assign all the aggregated resources
-			angular.forEach @$_propertyToResourceMapping, ( aggregateResourceDefinition, propertyExpression ) =>
+			angular.forEach @$_propertyToResourceJsonMapping, ( aggregateResourceDefinition, propertyExpression ) =>
 				# We will first assume we're not going to be attributing these aggregated resources to the given propertyExpression evaluation as an array unless (1), any
 				# of the aggregated resources (given by its corresponding jsonExpression) is an array, or (2), we have multiple aggregated resources
 				# that each correspond to this same propertyExpression evaluation.
