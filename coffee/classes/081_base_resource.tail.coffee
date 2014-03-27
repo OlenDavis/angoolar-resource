@@ -112,8 +112,8 @@ angoolar.BaseResource = class BaseResource extends angoolar.Named
 
 						usage = '=' unless usage?.length
 
-						inJson = -1 isnt propertyUsage.indexOf '='
-						inApi  = -1 isnt propertyUsage.indexOf '@'
+						inJson = -1 isnt usage.indexOf '='
+						inApi  = -1 isnt usage.indexOf '@'
 
 						if angular.isFunction angoolar[ resourceClassName ]
 							( resourceJsonMapping = {} )[ jsonProperty ] = angoolar[ resourceClassName ]
