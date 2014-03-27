@@ -1,9 +1,11 @@
-
 angoolar.BaseResource = class BaseResource extends angoolar.Named
 	$_prefix: '' # by default, we don't want to prefix our resource names
+
+	$_dasherizeName: yes
+
 	$_makeName: ->
 		try
-			name = angoolar.camelToDashes super # dasherize the name of the resource
+			name = if @$_dasherizeName then angoolar.camelToDashes super else super
 		catch e
 			name = ''
 
@@ -17,7 +19,7 @@ angoolar.BaseResource = class BaseResource extends angoolar.Named
 
 		apiPath
 
-	$_underscoreProperties: no
+	$_underscoreProperties: yes
 
 	$_makeApiProperty : ( property ) -> if @$_underscoreProperties then angoolar.camelToUnderscores property else property
 	$_makeJsonProperty: ( property ) -> if @$_underscoreProperties then angoolar.camelToUnderscores property else property
@@ -99,7 +101,7 @@ angoolar.BaseResource = class BaseResource extends angoolar.Named
 				apiProperty  = @$_makeApiProperty property
 
 				if angular.isString propertyUsage
-					if /[@=]{1,2}/.test propertyUsage
+					if /^[@=]{1,2}$/.test propertyUsage
 						inJson = -1 isnt propertyUsage.indexOf '='
 						inApi  = -1 isnt propertyUsage.indexOf '@'
 
