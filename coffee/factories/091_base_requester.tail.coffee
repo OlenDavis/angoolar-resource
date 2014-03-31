@@ -76,7 +76,7 @@ angoolar.BaseRequester = class BaseRequester extends angoolar.BaseFactory
 
 		@$_actionStats = {}
 
-		@$_apiPath = @$_resourceClass::$_makeApiPath() if @$_resourceClass? and not @$_apiPath?.length
+		@$_apiPath = @$_resourceClass::$_makeApiPath() if @$_resourceClass? and not @$_apiPath?
 
 		@$_actionDefaults = angoolar.prototypallyExtendPropertyObject @, '$_actionDefaults'
 		@$_actions        = angoolar.prototypallyExtendPropertyObject @, '$_actions'
@@ -89,10 +89,10 @@ angoolar.BaseRequester = class BaseRequester extends angoolar.BaseFactory
 			# Imply $_hasArray from isArray
 			actionDefinition.$_hasArray = actionDefinition.$_hasArray or actionDefinition.isArray or false
 
-			actionDefinition.$_apiPath = actionDefinition.$_resourceClass::$_makeApiPath() if actionDefinition.$_resourceClass? and not actionDefinition.$_apiPath?.length
+			actionDefinition.$_apiPath = actionDefinition.$_resourceClass::$_makeApiPath() if actionDefinition.$_resourceClass? and not actionDefinition.$_apiPath?
 
 			# Setup the url for the action if it has an $_apiPath
-			actionDefinition.url = "#{ @$_apiScheme }#{ angoolar.escapeColons @$_apiDomain }#{ actionDefinition.$_apiPath }" if actionDefinition.$_apiPath?.length
+			actionDefinition.url = "#{ @$_apiScheme }#{ angoolar.escapeColons @$_apiDomain }#{ actionDefinition.$_apiPath }" if actionDefinition.$_apiPath?
 
 			# Initialize each action's stats
 			@$_actionStats[ actionName ] = new angoolar.Stats @$injector
