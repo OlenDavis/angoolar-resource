@@ -144,6 +144,8 @@ angoolar.BaseRequester = class BaseRequester extends angoolar.BaseFactory
 	# This is called automatically on all resource instances produced by the actions of this requester; however if you want to attach requester methods
 	# to a resource instance you make, you can do so by calling this with the instance of your resource.
 	$_attachRequesterMethods: ( resourceInstance ) ->
+		return if resourceInstance.$_requesterMethodsAttached
+
 		@$_initResourceStats resourceInstance
 
 		angular.forEach @$_actions, ( actionDefinition, actionName ) =>
@@ -158,7 +160,7 @@ angoolar.BaseRequester = class BaseRequester extends angoolar.BaseFactory
 			resourceInstance[ "$#{ actionName }" ] = ( parameters, postData, theirSuccess, theirError ) ->
 				unless actionDefinition.$_hasArray
 					parameters = @$_parameters = angular.extend {}, ( actionDefinition.params or {} ), @$_getApiParameters(), parameters
-					postData   = @$_postData   = angular.extend {}, ( actionDefinition.data   or {} ), @$_toJson( @ ),           postData unless actionDefinition.method is 'GET'
+					postData   = @$_postData   = angular.extend {}, ( actionDefinition.data   or {} ), @$_toJson()          , postData unless actionDefinition.method is 'GET'
 				else
 				# If we're calling this on what might be an array of resources, then arg1 is the parameters, and if the action isn't a GET action, then arg2 is the post data, and the remaining arguments are the success and error callbacks
 					parameters = @$_parameters = angular.extend {}, ( actionDefinition.params or {} ), @$_parameters, parameters
@@ -175,6 +177,7 @@ angoolar.BaseRequester = class BaseRequester extends angoolar.BaseFactory
 
 				actualAction @, actionDefinition, actionName, parameters, postData, theirWrappedSuccess, theirWrappedError
 
+		resourceInstance.$_requesterMethodsAttached = yes
 		resourceInstance
 
 	$_action: ( responseResource, actionDefinition, actionName, parameters, postData, theirSuccess, theirError ) =>
