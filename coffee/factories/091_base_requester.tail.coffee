@@ -189,8 +189,13 @@ angoolar.BaseRequester = class BaseRequester extends angoolar.BaseFactory
 		deferred = @$q.defer()
 		responseResource.$_promise = deferred.promise
 
-		success = ( responseData, headersGetter ) => @success responseResource, responseData, headersGetter, theirSuccess, theirError, deferred, actionName, actionDefinition, parameters, postData
-		error   = ( rejectedResponse            ) => @error   responseResource, rejectedResponse,                          theirError, deferred, actionName, actionDefinition, parameters, postData
+		requestCancelled = no
+		responseResource.$_cancel = =>
+			requestCancelled = yes
+			@cancelled responseResource, theirError, deferred, actionName, actionDefinition, parameters, postData
+
+		success = ( responseData, headersGetter ) => @success responseResource, responseData, headersGetter, theirSuccess, theirError, deferred, actionName, actionDefinition, parameters, postData, requestCancelled unless requestCancelled
+		error   = ( rejectedResponse            ) => @error   responseResource, rejectedResponse,                          theirError, deferred, actionName, actionDefinition, parameters, postData, requestCancelled unless requestCancelled
 
 		@$_stats                                    .addPending()
 		@$_actionStats[ actionName ]                .addPending()
@@ -265,6 +270,12 @@ angoolar.BaseRequester = class BaseRequester extends angoolar.BaseFactory
 			
 		deferred.reject rejectedResponse
 
+	cancelled: ( responseResource, theirError, deferred, actionName, actionDefinition, parameters, postData = null ) => 
+		if angular.isFunction @[ "#{ actionName }Cancelled" ] then @[ "#{ actionName }Cancelled" ] responseResource, parameters, postData
+		if angular.isFunction theirError                      then theirError                      responseResource, parameters, postData
+
+		deferred.reject responseResource
+		
 	$_makeResponseResource: ( responseResource, responseDatum, parameters ) ->
 		responseResource.$_setApiParameters( parameters )
 		@$_fromJson responseResource, responseDatum

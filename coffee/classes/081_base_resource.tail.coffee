@@ -149,16 +149,19 @@ angoolar.BaseResource = class BaseResource extends angoolar.Named
 	# For successful post-processing of the action: $actionSuccess( resourceResponse, headersGetter ) ->
 	# For erroneous post-processing of the action: $actionError( resourceResponse, headersGetter ) ->
 
+	parsedExpressions = {}
+
 	$_toJson: ->
 		json = {}
 
 		json.this = json if @$_useThis
 
 		# Actually assign all the JSON properties properly to the resource if possible
-		angular.forEach @$_propertyToJsonMapping, ( jsonExpression, propertyExpression ) =>
-			propertyExpressionGetter = @$parse propertyExpression
-			jsonExpressionSetter = @$parse( jsonExpression ).assign
-			jsonExpressionSetter json, propertyExpressionGetter @
+		for propertyExpression, jsonExpression of @$_propertyToJsonMapping
+			propertyExpressionGetter =   parsedExpressions[ propertyExpression ] or @$parse propertyExpression
+			jsonExpressionSetter     = ( parsedExpressions[ jsonExpression     ] or @$parse jsonExpression ).assign
+
+			jsonExpressionSetter? json, propertyExpressionGetter @
 
 		@$_putResourcesOnto json, @$_propertyToResourceJsonMapping
 
@@ -171,13 +174,11 @@ angoolar.BaseResource = class BaseResource extends angoolar.Named
 			json.this = json if @$_useThis # this is to allow expressions to use `this` to refer to the json object itself
 
 			# Actually assign all the JSON properties properly to the resource if possible
-			angular.forEach @$_propertyToJsonMapping, ( jsonExpression, propertyExpression ) =>
-				jsonExpressionGetter = @$parse jsonExpression
-				jsonValue = jsonExpressionGetter json
+			for propertyExpression, jsonExpression of @$_propertyToJsonMapping
+				jsonExpressionGetter     =   parsedExpressions[ jsonExpression     ] or @$parse jsonExpression
+				propertyExpressionSetter = ( parsedExpressions[ propertyExpression ] or @$parse propertyExpression ).assign
 
-				propertyExpressionGetter = @$parse propertyExpression
-				propertyExpressionSetter = propertyExpressionGetter.assign
-				propertyExpressionSetter @, jsonValue
+				propertyExpressionSetter? @, jsonExpressionGetter json
 
 			@$_getResourcesFrom json, @$_propertyToResourceJsonMapping
 
@@ -255,16 +256,23 @@ angoolar.BaseResource = class BaseResource extends angoolar.Named
 	$_getApiParameters: ->
 		parameters = {}
 
-		for property, apiParameter of @$_propertyToApiMapping
-			parameters[ apiParameter ] = @[ property ] if @[ property ]?
+		for propertyExpression, apiParameterExpression of @$_propertyToApiMapping
+			apiParameterExpressionSetter = ( parsedExpressions[ apiParameterExpression ] or @$parse apiParameterExpression ).assign
+			propertyExpressionGetter     =   parsedExpressions[ propertyExpression     ] or @$parse propertyExpression
+
+			propertyValue = propertyExpressionGetter @
+			apiParameterExpressionSetter? parameters, propertyValue if propertyValue?
 
 		@$_putResourcesOnto parameters, @$_propertyToResourceApiMapping
 
 		parameters
 
 	$_setApiParameters: ( parameters ) ->
-		for property, apiParameter of @$_propertyToApiMapping
-			@[ property ] = parameters[ apiParameter ] if parameters?[ apiParameter ]?
+		for propertyExpression, apiParameterExpression of @$_propertyToApiMapping
+			apiParameterExpressionGetter =   parsedExpressions[ apiParameterExpression ] or @$parse apiParameterExpression
+			propertyExpressionSetter     = ( parsedExpressions[ propertyExpression     ] or @$parse propertyExpression ).assign
+
+			propertyExpressionSetter? @, apiParameterExpressionGetter parameters
 
 		@$_getResourcesFrom parameters, @$_propertyToResourceApiMapping
 
