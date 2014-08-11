@@ -131,7 +131,6 @@ angoolar.BaseRequester = class BaseRequester extends angoolar.BaseFactory
 
 			@$_attachRequesterMethods newResource
 
-
 		newResource
 
 	$_initResourceStats: ( resource ) -> # note that resource may be an empty array to be eventually filled with resources that will each have their own stats assigned
@@ -190,8 +189,10 @@ angoolar.BaseRequester = class BaseRequester extends angoolar.BaseFactory
 		responseResource.$_promise = deferred.promise
 
 		requestCancelled = no
+		responseResource.$_cancelled = no
 		responseResource.$_cancel = =>
 			requestCancelled = yes
+			responseResource.$_cancelled = yes
 			@cancelled responseResource, theirError, deferred, actionName, actionDefinition, parameters, postData
 
 		success = ( responseData, headersGetter ) => @success responseResource, responseData, headersGetter, theirSuccess, theirError, deferred, actionName, actionDefinition, parameters, postData, requestCancelled unless requestCancelled
