@@ -143,7 +143,7 @@ angoolar.BaseRequester = class BaseRequester extends angoolar.BaseFactory
 	# This is called automatically on all resource instances produced by the actions of this requester; however if you want to attach requester methods
 	# to a resource instance you make, you can do so by calling this with the instance of your resource.
 	$_attachRequesterMethods: ( resourceInstance ) ->
-		return if resourceInstance.$_requesterMethodsAttached
+		return resourceInstance if resourceInstance.$_requesterMethodsAttached
 
 		@$_initResourceStats resourceInstance
 
