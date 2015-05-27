@@ -26,9 +26,12 @@
     "bower_components"
   ],
   "dependencies": {
-    "angoolar": "~0.8.0"
+    "angoolar": "~0.9.0"
   },
   "devDependencies": {
-    "angular-resource": "1.4.0-beta.2"
+    "angular-resource": "1.4.0-rc.2"
+  },
+  "resolutions": {
+    "angular": "1.4.0-rc.2"
   }
 }
